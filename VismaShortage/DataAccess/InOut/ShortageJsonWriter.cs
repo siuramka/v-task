@@ -18,17 +18,7 @@ public class ShortageJsonWriter
     /// <param name="shortages"></param>
     public void WriteShortagesToFileAsJson(List<Shortage> shortages)
     {
-        var shortagesJson = ConvertShortagesToJsonString(shortages);
+        var shortagesJson = JsonSerializer.Serialize(shortages);
         File.WriteAllText(_jsonFilePath, shortagesJson);
-    }
-
-    /// <summary>
-    /// Convert list of shortages to json object list string
-    /// </summary>
-    /// <param name="shortages"></param>
-    /// <returns></returns>
-    private string ConvertShortagesToJsonString(List<Shortage> shortages)
-    {
-        return JsonSerializer.Serialize(shortages);
     }
 }
