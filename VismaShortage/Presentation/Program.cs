@@ -1,7 +1,6 @@
-﻿using VismaShortage.BusinessLogic.Filters;
-using VismaShortage.BusinessLogic.Models;
+﻿using VismaShortage.BusinessLogic.Models;
 using VismaShortage.BusinessLogic.Services;
-using VismaShortage.DataAccess.InOut;
+using VismaShortage.DataAccess.InOut.JsonData;
 using VismaShortage.DataAccess.Repositories;
 
 
@@ -10,12 +9,13 @@ Console.WriteLine("Enter your username/name or enter admin to login as admin!");
 
 var username = Console.ReadLine();
 
-List<Shortage> _shortages = new ShortageJsonReader("data.json").ReadAllShortages();
-ShortageJsonWriter _writer = new ShortageJsonWriter("data.json");
+var reader = new ShortageJsonFileReader("data.json");
+var writer = new ShortageJsonFileWriter("data.json");
 
-ShortageRepository repository = new ShortageRepository(_shortages, _writer);
+ShortageFileRepository fileRepository = new ShortageFileRepository(reader, writer);
+UserService userService = new UserService(username);
 
-var service = new ShortageService(username, repository);
+var service = new ShortageService(userService, fileRepository);
 
 Action();
 
@@ -41,7 +41,7 @@ void Action()
     }
 }
 
-void PrintShortages(List<Shortage> shortages)
+void PrintShortages(IEnumerable<Shortage> shortages)
 {
     foreach (var shortage in shortages)
     {
@@ -95,15 +95,14 @@ void FilterActions()
     Console.WriteLine("Filter by Title: type - 4");
 
     var action = Console.ReadLine();
-    IFilter? filter = null;
 
+    IEnumerable<Shortage> shortages;
     if (action == "1")
     {
         Console.WriteLine("Category (Electronics - Type: 0, Food - Type: 1, Other - Type: 2):");
         var category = Console.ReadLine();
         Enum.TryParse(category, out Category parsedCategory);
-
-        filter = new FilterByCategory(parsedCategory);
+        shortages = service.GetAllByCategory(parsedCategory);
     }
     else if (action == "2")
     {
@@ -116,7 +115,7 @@ void FilterActions()
         DateTime.TryParse(startDate, out DateTime parsedStartDate);
         DateTime.TryParse(endDate, out DateTime parsedEndDate);
 
-        filter = new FilterByCreatedDate(parsedStartDate, parsedEndDate);
+        shortages = service.GetAllByCreationDateInterval(parsedStartDate, parsedEndDate);
     }
     else if (action == "3")
     {
@@ -124,22 +123,21 @@ void FilterActions()
         var category = Console.ReadLine();
         Enum.TryParse(category, out RoomType parsedRoom);
 
-        filter = new FilterByRoom(parsedRoom);
+        shortages = service.GetAllByRoomType(parsedRoom);
     }
     else if (action == "4")
     {
         Console.Write("Title:");
         var title = Console.ReadLine();
 
-        filter = new FilterByTitle(title);
+        shortages = service.GetAllByTitle(title);
     }
     else
     {
         return;
     }
 
-    var filteredShortages = filter.Apply(service.GetAll());
-    PrintShortages(filteredShortages);
+    PrintShortages(shortages);
 
     Action();
 }

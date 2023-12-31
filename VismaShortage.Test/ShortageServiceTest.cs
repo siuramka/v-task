@@ -1,6 +1,7 @@
 ﻿using VismaShortage.BusinessLogic.Models;
 using VismaShortage.BusinessLogic.Services;
 using VismaShortage.DataAccess.InOut;
+using VismaShortage.DataAccess.InOut.JsonData;
 using VismaShortage.DataAccess.Repositories;
 
 namespace VismaShortage.Test;
@@ -8,18 +9,19 @@ namespace VismaShortage.Test;
 public class ShortageServiceTest
 {
     private ShortageService _service;
-    private ShortageRepository _repository;
+    private ShortageFileRepository _fileRepository;
 
     [SetUp]
     public void Setup()
     {
         File.Delete("testData.json");
 
-        List<Shortage> shortages = new ShortageJsonReader("testData.json").ReadAllShortages();
-        ShortageJsonWriter writer = new ShortageJsonWriter("testData.json");
+        IFileReader fileReader = new ShortageJsonFileReader("testData.json");
+        IFileWriter fileWriter = new ShortageJsonFileWriter("testData.json");
 
-        _repository = new ShortageRepository(shortages, writer);
-        _service = new ShortageService("admin", _repository);
+        _fileRepository = new ShortageFileRepository(fileReader, fileWriter);
+
+        _service = new ShortageService(new UserService("admin"), _fileRepository);
     }
 
     [Test]
@@ -30,7 +32,7 @@ public class ShortageServiceTest
 
         _service.Add(shortage);
 
-        Assert.Contains(shortage, _service.GetAll());
+        Assert.Contains(shortage, _service.GetAll().ToList());
     }
 
     [Test]
@@ -42,7 +44,7 @@ public class ShortageServiceTest
         _service.Add(shortage);
         _service.Add(shortage);
 
-        Assert.AreEqual(1, _service.GetAll().Count);
+        Assert.AreEqual(1, _service.GetAll().Count());
     }
 
     [Test]
@@ -64,8 +66,9 @@ public class ShortageServiceTest
             0, new DateTime(2020, 11, 11), 0);
 
         _service.Add(adminShortage);
+        
+        _service = new ShortageService(new UserService("user"), _fileRepository);
 
-        _service = new ShortageService("user", _repository);
         var userShortage = new Shortage("TestShortage222", "user", 10,
             0, new DateTime(2020, 11, 11), 0);
 
@@ -73,9 +76,9 @@ public class ShortageServiceTest
         
         _service.Delete(adminShortage.Title, adminShortage.Room);
         
-        _service = new ShortageService("admin", _repository);
+        _service = new ShortageService(new UserService("admin"), _fileRepository);
 
         //Admin shortage still contains
-        Assert.Contains(adminShortage, _service.GetAll());
+        Assert.Contains(adminShortage, _service.GetAll().ToList());
     }
 }

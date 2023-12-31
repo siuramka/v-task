@@ -5,12 +5,12 @@ namespace VismaShortage.BusinessLogic.Services;
 
 public class ShortageService
 {
-    private readonly ShortageRepository _repository;
-    private string _currentUserName;
+    private readonly IShortageRepository _repository;
+    private readonly UserService _userService;
 
-    public ShortageService(string username, ShortageRepository repository)
+    public ShortageService(UserService userService, IShortageRepository repository)
     {
-        _currentUserName = username;
+        _userService = userService;
         _repository = repository;
     }
 
@@ -22,7 +22,7 @@ public class ShortageService
     /// <returns>True if created/overriden False if Shortage already exists</returns>
     public bool Add(Shortage shortage)
     {
-        var existingShortage = _repository.ReadByTitleAndRoom(shortage.Title, shortage.Room);
+        var existingShortage = _repository.GetByRoomAndTitle(shortage.Room, shortage.Title);
 
         if (existingShortage == null)
         {
@@ -46,28 +46,80 @@ public class ShortageService
     /// <param name="room">Room type of shortage</param>
     public void Delete(string title, RoomType room)
     {
-        var shortage = _repository.ReadByTitleAndRoom(title, room);
+        var existingShortage = _repository.GetByRoomAndTitle(room, title);
 
-        if (shortage == null)
+        if (existingShortage == null)
             return;
 
-        if (shortage.Name.Equals(_currentUserName, StringComparison.OrdinalIgnoreCase)
-            || _currentUserName.Equals("admin", StringComparison.OrdinalIgnoreCase))
+        if (existingShortage.Name.Equals(_userService.Username, StringComparison.OrdinalIgnoreCase)
+            || _userService.Username.Equals("admin", StringComparison.OrdinalIgnoreCase))
         {
-            _repository.Delete(shortage);
+            _repository.Delete(existingShortage);
         }
     }
 
     /// <summary>
-    /// Retrieves shortages based on user.
-    /// If user retrieves own shortages.
-    /// If admin retrieves all shortages.
+    /// Get all shortages
+    /// If admin gets all, if user get created by user.
     /// </summary>
     /// <returns>List of shortages</returns>
-    public List<Shortage> GetAll()
+    public IEnumerable<Shortage> GetAll()
     {
-        return _currentUserName.Equals("admin", StringComparison.OrdinalIgnoreCase)
-            ? _repository.ReadAll()
-            : _repository.ReadAllByUser(_currentUserName);
+        return _userService.Username.Equals("admin", StringComparison.OrdinalIgnoreCase)
+            ? _repository.GetAll()
+            : _repository.GetAll(_userService.Username);
+    }
+
+    /// <summary>
+    /// Get all shortages by category
+    /// If admin gets all, if user get created by user.
+    /// </summary>
+    /// <param name="category"></param>
+    /// <returns>List of shortages</returns>
+    public IEnumerable<Shortage> GetAllByCategory(Category category)
+    {
+        return _userService.Username.Equals("admin", StringComparison.OrdinalIgnoreCase)
+            ? _repository.GetAllByCategory(category)
+            : _repository.GetAllByCategory(category, _userService.Username);
+    }
+
+    /// <summary>
+    /// Get all shortages by room type
+    /// If admin gets all, if user get created by user.
+    /// </summary>
+    /// <param name="roomType"></param>
+    /// <returns>List of shortages</returns>
+    public IEnumerable<Shortage> GetAllByRoomType(RoomType roomType)
+    {
+        return _userService.Username.Equals("admin", StringComparison.OrdinalIgnoreCase)
+            ? _repository.GetAllByRoomType(roomType)
+            : _repository.GetAllByRoomType(roomType, _userService.Username);
+    }
+
+    /// <summary>
+    /// Get all shortages by whether the creation date is included in the specified interval.
+    /// If admin gets all, if user get created by user.
+    /// </summary>
+    /// <param name="startDate"></param>
+    /// <param name="endDate"></param>
+    /// <returns>List of shortages</returns>
+    public IEnumerable<Shortage> GetAllByCreationDateInterval(DateTime startDate, DateTime endDate)
+    {
+        return _userService.Username.Equals("admin", StringComparison.OrdinalIgnoreCase)
+            ? _repository.GetAllByCreationDateInterval(startDate, endDate)
+            : _repository.GetAllByCreationDateInterval(startDate, endDate, _userService.Username);
+    }
+
+    /// <summary>
+    /// Get all shortages by title.
+    /// If admin gets all, if user get created by user.
+    /// </summary>
+    /// <param name="title"></param>
+    /// <returns>List of shortages</returns>
+    public IEnumerable<Shortage> GetAllByTitle(string title)
+    {
+        return _userService.Username.Equals("admin", StringComparison.OrdinalIgnoreCase)
+            ? _repository.GetAllByTitle(title)
+            : _repository.GetAllByTitle(title, _userService.Username);
     }
 }
