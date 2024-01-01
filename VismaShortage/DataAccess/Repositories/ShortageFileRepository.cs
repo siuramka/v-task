@@ -75,14 +75,14 @@ public class ShortageFileRepository : IShortageRepository
 
     public IEnumerable<Shortage> GetAllByCreationDateInterval(DateTime startDate, DateTime endDate)
     {
-        return _shortages.Where(s => startDate > s.CreatedOn && s.CreatedOn < endDate);
+        return _shortages.Where(s => startDate < s.CreatedOn && s.CreatedOn < endDate);
     }
 
     public IEnumerable<Shortage> GetAllByCreationDateInterval(DateTime startDate, DateTime endDate,
         string username)
     {
         return _shortages.Where(s =>
-            startDate > s.CreatedOn && s.CreatedOn < endDate &&
+            startDate < s.CreatedOn && s.CreatedOn < endDate &&
             s.Name.Equals(username, StringComparison.OrdinalIgnoreCase));
     }
 
